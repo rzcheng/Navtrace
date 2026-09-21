@@ -91,3 +91,9 @@ labels. Large uncertainty can admit a bad fix; small uncertainty around a wrong
 pose can reject a good one. Diagnose both from residuals, NIS, pose errors, and
 the actual acceptance history before proposing recovery logic. The study keeps
 the M1 parameters unchanged so the comparison has a defined experimental basis.
+
+For a concrete example, inspect seed 70002 in the [M2 report](m2_results.md).
+At 40 s a shifted fix was accepted with NIS 2.048; at 45 s a clean fix was
+rejected with NIS 169.026. Explain how S changed before proposing a fix.
+Also compare seed 70001: a large variance in one direction did not prevent
+rejection. The eigenvectors and residual direction matter, not just the diagonal.

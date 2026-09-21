@@ -142,3 +142,13 @@ and the distinction between already within the limit and later recovery.
 Use new seeds for future validation once these are inspected. The three-seed
 study is evidence for these specified synthetic cases, not a general robustness
 or detection-rate claim. CI runs the development variant only.
+
+The [measured M2 report](docs/m2_results.md) records the completed 45-replay
+experiment. Median position RMSE for basic/gated EKF was 0.354/0.201 m for
+spikes and 5.697/0.378 m for sustained offsets. Early dropout with offset GPS on
+return was worse with gating: 5.964/6.775 m, including a gated run at 22.000 m.
+All three gated runs rejected every clean fix from 45–60 s in that case.
+No parameters were retuned or recovery failures removed from the report.
+See the [actual comparison plot](results/gps-fault-study/position-rmse.png)
+and [return records](results/gps-fault-study/recovery.csv). Seeds 70001–70003
+have now been evaluated and are no longer untouched validation data.

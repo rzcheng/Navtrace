@@ -5,6 +5,8 @@ with independent Python synthetic data/evaluation. Ryan authorized continuing
 after M0–M1 review. Current milestone M2 is GPS fault/return evaluation on
 reserved seeds, with a frozen protocol and unchanged estimator parameters.
 Stop after M2 for review; no automatic reset/inflation or other roadmap work.
+M2 seeds 70001–70003 have now been evaluated; do not reuse them as untouched
+validation data for future tuning. Preserve the failures in `docs/m2_results.md`.
 No ROS, hardware, SLAM, web app, proprietary data, or other project changes.
 Do not expand scope without Ryan's approval.
 
