@@ -85,6 +85,39 @@ TEST(Replay, DeadReckoningIsCausalAndIgnoresGps) {
   EXPECT_EQ(replay.accepted_gps(), 0U);
   EXPECT_EQ(replay.ignored_gps(), 1U);
 }
+TEST(Replay, GpsSnapshotsBracketCorrectionAndInvalidEventsDoNotAdvanceHistory) {
+  State state = State::Zero();
+  state(SPEED) = 1.0;
+  Replay replay(state, Covariance::Identity(), Config{}, Method::GatedEkf);
+  GpsMeasurement measurement;
+  measurement.position_m << 0.2, 0.1;
+  const auto first = replay.process({0, measurement});
+  ASSERT_TRUE(first.valid);
+  ASSERT_TRUE(first.gps.has_value());
+  EXPECT_EQ(first.gps->predicted_state, state);
+  EXPECT_EQ(first.gps->posterior_state, replay.state());
+  EXPECT_FALSE(first.gps->since_accepted_us.has_value());
+  EXPECT_FALSE(first.gps->since_available_us.has_value());
+  EXPECT_NE(first.gps->predicted_covariance, first.gps->posterior_covariance);
+  EXPECT_NEAR(first.update.nis, 0.025, 1e-14);  // S=2I BEFORE correction.
+  measurement.position_m << 100.0, 100.0;
+  const auto rejected = replay.process({200000, measurement});
+  ASSERT_TRUE(rejected.valid);
+  ASSERT_EQ(rejected.update.status, UpdateStatus::Rejected);
+  EXPECT_EQ(rejected.gps->predicted_state, rejected.gps->posterior_state);
+  EXPECT_EQ(rejected.gps->predicted_covariance, rejected.gps->posterior_covariance);
+  EXPECT_EQ(rejected.gps->since_accepted_us.value(), 200000);
+  EXPECT_EQ(rejected.gps->rejection_duration_us, 0);
+  EXPECT_FALSE(replay.process({200000, measurement}).valid);
+  GpsMeasurement invalid_measurement = measurement;
+  invalid_measurement.covariance_m2(0, 0) = -1.0;
+  EXPECT_FALSE(replay.process({300000, invalid_measurement}).valid);
+  const auto again = replay.process({400000, measurement});
+  ASSERT_TRUE(again.valid);
+  EXPECT_EQ(again.gps->since_available_us.value(), 200000);
+  EXPECT_EQ(again.gps->since_accepted_us.value(), 400000);
+  EXPECT_EQ(again.gps->rejection_duration_us, 200000);
+}
 TEST(Input, StrictMalformedCsvChecks) {
   EXPECT_NO_THROW(parse_event("10000,gyro,0.1,0,0.001,0,0"));
   EXPECT_NO_THROW(parse_event("10000,gps,1,2,1,0.1,1"));

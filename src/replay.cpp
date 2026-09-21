@@ -70,6 +70,9 @@ ReplayResult Replay::process(const SensorEvent& event) {
     } else if (const auto* wheel = std::get_if<WheelSpeedMeasurement>(&event.measurement)) {
       result.update = candidate.update_wheel_speed(*wheel);
     } else {
+      result.gps.emplace();
+      result.gps->predicted_state = candidate.state();
+      result.gps->predicted_covariance = candidate.covariance();
       result.update = candidate.update_gps(std::get<GpsMeasurement>(event.measurement));
     }
     if (result.update.status == UpdateStatus::Invalid) {
@@ -88,6 +91,21 @@ ReplayResult Replay::process(const SensorEvent& event) {
     if (method_ == Method::DeadReckoning) ++ignored_gps_;
     else if (result.update.status == UpdateStatus::Accepted) ++accepted_gps_;
     else ++rejected_gps_;
+    if (result.gps) {
+      auto& gps = *result.gps;
+      gps.posterior_state = candidate.state();
+      gps.posterior_covariance = candidate.covariance();
+      if (last_available_gps_us_) gps.since_available_us = timestamp_us_ - *last_available_gps_us_;
+      if (last_accepted_gps_us_) gps.since_accepted_us = timestamp_us_ - *last_accepted_gps_us_;
+      if (result.update.status == UpdateStatus::Accepted) {
+        last_accepted_gps_us_ = timestamp_us_;
+        rejection_start_us_.reset();
+      } else {
+        if (!rejection_start_us_) rejection_start_us_ = timestamp_us_;
+        gps.rejection_duration_us = timestamp_us_ - *rejection_start_us_;
+      }
+      last_available_gps_us_ = timestamp_us_;
+    }
   }
   result.valid = true;
   result.reason = result.update.reason;

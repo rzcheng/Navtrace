@@ -2,16 +2,29 @@
 
 #include "navtrace/ekf.hpp"
 #include <cstdint>
+#include <optional>
 #include <variant>
 
 namespace navtrace {
 // Variant order is the required simultaneous-event order.
 using Measurement = std::variant<GyroMeasurement, WheelSpeedMeasurement, GpsMeasurement>;
 struct SensorEvent { std::int64_t timestamp_us; Measurement measurement; };
+// Snapshots bracket only the GPS correction, after prediction and any earlier
+// simultaneous sensors. Diagnostic bookkeeping never changes estimator inputs.
+struct GpsEventDiagnostics {
+  State predicted_state;
+  Covariance predicted_covariance;
+  State posterior_state;
+  Covariance posterior_covariance;
+  std::optional<std::int64_t> since_available_us;
+  std::optional<std::int64_t> since_accepted_us;
+  std::int64_t rejection_duration_us = 0;
+};
 struct ReplayResult {
   bool valid = false;
   std::string reason;
   UpdateResult update;
+  std::optional<GpsEventDiagnostics> gps;
 };
 enum class Method { DeadReckoning, Ekf, GatedEkf };
 
@@ -37,5 +50,8 @@ class Replay {
   std::size_t accepted_gps_ = 0;
   std::size_t rejected_gps_ = 0;
   std::size_t ignored_gps_ = 0;
+  std::optional<std::int64_t> last_available_gps_us_;
+  std::optional<std::int64_t> last_accepted_gps_us_;
+  std::optional<std::int64_t> rejection_start_us_;
 };
 }  // namespace navtrace

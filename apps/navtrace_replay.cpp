@@ -35,7 +35,14 @@ int main(int argc, char** argv) {
     output << "timestamp_us,sensor,px_m,py_m,yaw_rad,speed_m_per_s,yaw_rate_rad_per_s,gyro_bias_rad_per_s";
     for (int row = 0; row < 6; ++row) for (int col = 0; col < 6; ++col) output << ",p" << row << col;
     output << ",covariance_min_eigenvalue,covariance_symmetry_error\n";
-    diagnostics << "timestamp_us,status,residual_x_m,residual_y_m,s00,s01,s11,nis,threshold,reason\n";
+    diagnostics << "timestamp_us,status,residual_x_m,residual_y_m,s00,s01,s11,nis,threshold,reason";
+    for (const char* prefix : {"pre", "post"}) {
+      for (int i = 0; i < 6; ++i) diagnostics << ',' << prefix << "_x" << i;
+      for (int i = 0; i < 6; ++i) for (int j = 0; j < 6; ++j) diagnostics << ',' << prefix << "_p" << i << j;
+    }
+    diagnostics << ",z0,z1,r00,r01,r11,since_available_s,since_accepted_s,rejection_duration_s";
+    for (int i = 0; i < 6; ++i) diagnostics << ",delta_x" << i;
+    diagnostics << '\n';
     const char* sensor_names[] = {"gyro", "wheel", "gps"};
     std::size_t line_number = 1;
     std::size_t events = 0;
@@ -60,11 +67,32 @@ int main(int argc, char** argv) {
         output << '\n';
         if (std::holds_alternative<GpsMeasurement>(event.measurement)) {
           const auto& u = result.update;
-          if (method == Method::DeadReckoning) diagnostics << event.timestamp_us << ",ignored,,,,,,,,GPS ignored by dead reckoning\n";
+          if (method == Method::DeadReckoning) diagnostics << event.timestamp_us << ",ignored,,,,,,,,GPS ignored by dead reckoning";
           else diagnostics << event.timestamp_us << ',' << (u.status == UpdateStatus::Accepted ? "accepted" : "rejected")
             << ',' << u.residual_m(0) << ',' << u.residual_m(1) << ',' << u.innovation_covariance_m2(0, 0)
             << ',' << u.innovation_covariance_m2(0, 1) << ',' << u.innovation_covariance_m2(1, 1)
-            << ',' << u.nis << ',' << u.threshold << ',' << u.reason << '\n';
+            << ',' << u.nis << ',' << u.threshold << ',' << u.reason;
+          if (result.gps) {
+            const auto& gps = *result.gps;
+            for (int i = 0; i < 6; ++i) diagnostics << ',' << gps.predicted_state(i);
+            for (int i = 0; i < 6; ++i) for (int j = 0; j < 6; ++j) diagnostics << ',' << gps.predicted_covariance(i, j);
+            for (int i = 0; i < 6; ++i) diagnostics << ',' << gps.posterior_state(i);
+            for (int i = 0; i < 6; ++i) for (int j = 0; j < 6; ++j) diagnostics << ',' << gps.posterior_covariance(i, j);
+            const auto& measurement = std::get<GpsMeasurement>(event.measurement);
+            diagnostics << ',' << measurement.position_m(0) << ',' << measurement.position_m(1)
+              << ',' << measurement.covariance_m2(0, 0) << ',' << measurement.covariance_m2(0, 1)
+              << ',' << measurement.covariance_m2(1, 1) << ',';
+            if (gps.since_available_us) diagnostics << static_cast<double>(*gps.since_available_us) * 1e-6;
+            diagnostics << ',';
+            if (gps.since_accepted_us) diagnostics << static_cast<double>(*gps.since_accepted_us) * 1e-6;
+            diagnostics << ',' << static_cast<double>(gps.rejection_duration_us) * 1e-6;
+            State change = gps.posterior_state - gps.predicted_state;
+            change(YAW) = wrap_angle(change(YAW));
+            for (int i = 0; i < 6; ++i) diagnostics << ',' << change(i);
+          } else {
+            for (int i = 0; i < 98; ++i) diagnostics << ',';
+          }
+          diagnostics << '\n';
         }
       } catch (const std::exception& error) {
         throw std::runtime_error("sensor line " + std::to_string(line_number) + ": " + error.what());

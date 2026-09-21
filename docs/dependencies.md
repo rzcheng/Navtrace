@@ -28,3 +28,8 @@ Project targets compile as C++17 with `-Wall -Wextra -Wpedantic -Wconversion
 -Wshadow -Werror`; Debug builds use the compiler's debug flags. Optional
 sanitizers add `-fsanitize=address,undefined -fno-omit-frame-pointer` at compile
 time and both sanitizers at link time. Third-party headers are system includes.
+
+M3 adds offline SciPy **1.15.3**, installed only in `.venv` and pinned in
+`requirements-lock.txt`, for `scipy.stats.chi2.ppf`. Its official release and
+Python compatibility were checked at https://pypi.org/project/scipy/1.15.3/.
+The macOS arm64 wheel is about 22.4 MB; it uses the existing NumPy dependency.
