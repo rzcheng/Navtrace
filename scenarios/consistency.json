@@ -1,0 +1,208 @@
+{
+  "protocol_id": "m3-consistency-v1",
+  "baseline_commit": "32aaf85",
+  "frozen_filter_sha256": "23b03b85379e44aac9caf702e2c873789533ce93bc2a4b2b2db874eaa41c54b4",
+  "development_seed": 20260921,
+  "stress_seeds": [
+    81001,
+    81002,
+    81003,
+    81004,
+    81005,
+    81006,
+    81007,
+    81008,
+    81009,
+    81010
+  ],
+  "matched_seeds": [
+    82001,
+    82002,
+    82003,
+    82004,
+    82005,
+    82006,
+    82007,
+    82008,
+    82009,
+    82010,
+    82011,
+    82012,
+    82013,
+    82014,
+    82015,
+    82016,
+    82017,
+    82018,
+    82019,
+    82020,
+    82021,
+    82022,
+    82023,
+    82024,
+    82025,
+    82026,
+    82027,
+    82028,
+    82029,
+    82030
+  ],
+  "stress_duration_s": 60,
+  "matched_duration_s": 2,
+  "methods": [
+    "ekf",
+    "gated"
+  ],
+  "fixed_stress_times_us": [
+    0,
+    1800000,
+    1990000,
+    19990000,
+    21990000,
+    22000000,
+    27000000,
+    39990000,
+    40000000,
+    45000000,
+    60000000
+  ],
+  "fixed_matched_times_us": [
+    0,
+    500000,
+    1000000,
+    2000000
+  ],
+  "max_replays": 170,
+  "scenarios": [
+    {
+      "id": "nominal",
+      "family": "original",
+      "outage_us": null,
+      "offsets": [],
+      "recovery_windows": []
+    },
+    {
+      "id": "early_clean",
+      "family": "original",
+      "outage_us": [
+        2000000,
+        22000000
+      ],
+      "offsets": [],
+      "recovery_windows": [
+        {
+          "id": "clean_return",
+          "reference_us": 22000000,
+          "observation_end_us": 60000000
+        }
+      ]
+    },
+    {
+      "id": "early_offset",
+      "family": "original",
+      "outage_us": [
+        2000000,
+        22000000
+      ],
+      "offsets": [
+        {
+          "start_us": 22000000,
+          "end_us": 27000000,
+          "offset_m": [
+            6.0,
+            -4.0
+          ]
+        }
+      ],
+      "recovery_windows": [
+        {
+          "id": "clean_return",
+          "reference_us": 27000000,
+          "observation_end_us": 60000000
+        }
+      ]
+    },
+    {
+      "id": "late_clean",
+      "family": "original",
+      "outage_us": [
+        20000000,
+        40000000
+      ],
+      "offsets": [],
+      "recovery_windows": [
+        {
+          "id": "clean_return",
+          "reference_us": 40000000,
+          "observation_end_us": 60000000
+        }
+      ]
+    },
+    {
+      "id": "late_offset",
+      "family": "original",
+      "outage_us": [
+        20000000,
+        40000000
+      ],
+      "offsets": [
+        {
+          "start_us": 40000000,
+          "end_us": 45000000,
+          "offset_m": [
+            6.0,
+            -4.0
+          ]
+        }
+      ],
+      "recovery_windows": [
+        {
+          "id": "clean_return",
+          "reference_us": 45000000,
+          "observation_end_us": 60000000
+        }
+      ]
+    },
+    {
+      "id": "weak_late_clean",
+      "family": "weak_start",
+      "outage_us": [
+        20000000,
+        40000000
+      ],
+      "offsets": [],
+      "recovery_windows": [
+        {
+          "id": "clean_return",
+          "reference_us": 40000000,
+          "observation_end_us": 60000000
+        }
+      ]
+    },
+    {
+      "id": "weak_late_offset",
+      "family": "weak_start",
+      "outage_us": [
+        20000000,
+        40000000
+      ],
+      "offsets": [
+        {
+          "start_us": 40000000,
+          "end_us": 45000000,
+          "offset_m": [
+            6.0,
+            -4.0
+          ]
+        }
+      ],
+      "recovery_windows": [
+        {
+          "id": "clean_return",
+          "reference_us": 45000000,
+          "observation_end_us": 60000000
+        }
+      ]
+    }
+  ]
+}
