@@ -152,3 +152,23 @@ No parameters were retuned or recovery failures removed from the report.
 See the [actual comparison plot](results/gps-fault-study/position-rmse.png)
 and [return records](results/gps-fault-study/recovery.csv). Seeds 70001–70003
 have now been evaluated and are no longer untouched validation data.
+
+## M3 diagnosis and consistency study
+
+M3 adds explicit GPS pre/post snapshots and offline full-state/marginal-position
+NEES, nominal ellipse coverage, event-direction NIS, and local process sensitivity.
+It keeps the estimator equations and all M1/M2 parameters unchanged. The
+[predefined protocol](docs/m3_protocol.md) separates a sampled-prior, discrete
+model-matched sanity ensemble from analytical, mismatched/faulted stress cases.
+
+```bash
+python tools/diagnose_failure.py --binary build/navtrace_replay --output results/m3-event-diagnosis
+python tools/run_consistency_study.py --binary build/navtrace_replay --output results/consistency-study
+```
+
+Both commands require fresh output paths. Add `--smoke` to the study command for
+three development replays without consuming reserved evaluation seeds. Install
+updated `requirements-lock.txt` first; SciPy is an offline analysis dependency.
+The C++ `navtrace_linearize` helper uses nominal paths only for offline analysis;
+those paths are never passed to the replay estimator. Full raw study CSVs are
+retained losslessly compressed. See [diagnostic conventions](docs/diagnostics.md).

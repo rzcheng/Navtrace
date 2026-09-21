@@ -29,3 +29,5 @@ jobs:
         run: .venv/bin/python tools/run_demo.py --binary build/navtrace_replay --output results/ci-smoke
       - name: GPS fault study smoke test (development seed only)
         run: .venv/bin/python tools/run_fault_study.py --binary build/navtrace_replay --output results/ci-fault-smoke --development-smoke
+      - name: Consistency study smoke test (development seed only)
+        run: .venv/bin/python tools/run_consistency_study.py --binary build/navtrace_replay --output results/ci-consistency-smoke --smoke
