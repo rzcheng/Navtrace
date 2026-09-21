@@ -1,7 +1,10 @@
 # NavTrace instructions
 
 Scope: an offline C++17 six-state planar EKF and deterministic sensor replay,
-with independent Python synthetic data/evaluation. Stop at M0–M1 for review.
+with independent Python synthetic data/evaluation. Ryan authorized continuing
+after M0–M1 review. Current milestone M2 is GPS fault/return evaluation on
+reserved seeds, with a frozen protocol and unchanged estimator parameters.
+Stop after M2 for review; no automatic reset/inflation or other roadmap work.
 No ROS, hardware, SLAM, web app, proprietary data, or other project changes.
 Do not expand scope without Ryan's approval.
 
@@ -10,6 +13,8 @@ Build/test (activate `.venv` first):
 `cmake --build build --parallel 2`,
 `ctest --test-dir build --output-on-failure`, `python -m pytest -q`.
 Demo: `python tools/run_demo.py --binary build/navtrace_replay --output results/first-demo`.
+M2: `python tools/run_fault_study.py --binary build/navtrace_replay --output results/gps-fault-study`.
+Use `--development-smoke` to validate the study tooling without consuming held-out seeds.
 Sanitizers: configure `build-sanitize` with `-DNAVTRACE_SANITIZE=ON`.
 
 Use meters, seconds, radians, CCW heading from world +x, body forward signed

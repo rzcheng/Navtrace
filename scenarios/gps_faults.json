@@ -1,0 +1,37 @@
+{
+  "protocol_id": "gps-faults-v1",
+  "baseline_commit": "227929304d05b5a273b0677671a470da2cf82ea0",
+  "frozen_filter_sha256": "23b03b85379e44aac9caf702e2c873789533ce93bc2a4b2b2db874eaa41c54b4",
+  "evaluation_seeds": [70001, 70002, 70003],
+  "development_seed": 20260921,
+  "generator_settings": {
+    "duration_s": 60, "gyro_hz": 100, "wheel_hz": 20, "gps_hz": 5,
+    "gyro_noise_std_rad_per_s": 0.008, "wheel_noise_std_m_per_s": 0.05,
+    "gps_noise_std_m": 0.6, "true_gyro_bias_rad_per_s": 0.015,
+    "outage_start_s": 20, "outage_end_s": 40
+  },
+  "reference_window_us": [20000000, 40000000],
+  "settling": {"position_limit_m": 1.0, "dwell_us": 2000000},
+  "scenarios": [
+    {"id": "nominal", "label": "Nominal", "outage_us": null, "offsets": [], "recovery_windows": []},
+    {"id": "dropout", "label": "GPS dropout", "outage_us": [20000000, 40000000], "offsets": [],
+     "recovery_windows": [{"id": "gps_return", "reference_us": 40000000, "observation_end_us": 60000000}]},
+    {"id": "spikes", "label": "Three GPS spikes", "outage_us": null,
+     "offsets": [
+       {"start_us": 12000000, "end_us": 12200000, "offset_m": [12.0, -8.0]},
+       {"start_us": 28000000, "end_us": 28200000, "offset_m": [-10.0, 12.0]},
+       {"start_us": 44000000, "end_us": 44200000, "offset_m": [15.0, 5.0]}
+     ],
+     "recovery_windows": [
+       {"id": "spike_1", "reference_us": 12200000, "observation_end_us": 27990000},
+       {"id": "spike_2", "reference_us": 28200000, "observation_end_us": 43990000},
+       {"id": "spike_3", "reference_us": 44200000, "observation_end_us": 60000000}
+     ]},
+    {"id": "offset", "label": "Sustained GPS offset", "outage_us": null,
+     "offsets": [{"start_us": 20000000, "end_us": 40000000, "offset_m": [6.0, -4.0]}],
+     "recovery_windows": [{"id": "offset_ends", "reference_us": 40000000, "observation_end_us": 60000000}]},
+    {"id": "dropout_offset", "label": "Early dropout + offset return", "outage_us": [2000000, 40000000],
+     "offsets": [{"start_us": 40000000, "end_us": 45000000, "offset_m": [6.0, -4.0]}],
+     "recovery_windows": [{"id": "clean_gps_return", "reference_us": 45000000, "observation_end_us": 60000000}]}
+  ]
+}
