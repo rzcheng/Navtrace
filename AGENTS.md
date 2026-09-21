@@ -36,3 +36,12 @@ Read docs/m3_results.md and docs/failure_case_study.md before further changes.
 Seeds 81001–81010 and 82001–82030 are consumed; never relabel them untouched.
 Preserve original frozen results and the separate absent-outage labeling correction.
 Stop for Ryan's review. The proposed next study needs fresh seeds and a new protocol.
+
+## Writing style
+
+Commit messages should be all lowercase, short, and written in plain language.
+Say what changed without packing in technical details or adding formal prefixes.
+Examples: `add the first localization demo`, `fix outage labels in the results`.
+Use straightforward comments, descriptive names, and easy-to-follow code.
+Keep useful math and units in comments where they help explain the code. Do not
+make code deliberately sloppy or change behavior just to make it look informal.

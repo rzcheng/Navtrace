@@ -103,7 +103,7 @@ def generate(output, settings, *, seed_role="development"):
             values += rng.normal(0, std, len(timestamps))
             rows.extend((int(t), sensor, z, 0, std**2, 0, 0) for t, z in zip(timestamps, values))
     rank = {"gyro": 0, "wheel": 1, "gps": 2}
-    # Assemble a synthetic recording, not a repair of out-of-order replay input.
+    # Put the generated samples in time order. Replay still rejects late data.
     rows.sort(key=lambda row: (row[0], rank[row[1]]))
     start_us = round(settings["outage_start_s"] * 1e6)
     end_us = round(settings["outage_end_s"] * 1e6)

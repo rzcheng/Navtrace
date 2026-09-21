@@ -6,11 +6,11 @@
 #include <variant>
 
 namespace navtrace {
-// Variant order is the required simultaneous-event order.
+// At the same timestamp, process gyro, then wheel speed, then GPS.
 using Measurement = std::variant<GyroMeasurement, WheelSpeedMeasurement, GpsMeasurement>;
 struct SensorEvent { std::int64_t timestamp_us; Measurement measurement; };
-// Snapshots bracket only the GPS correction, after prediction and any earlier
-// simultaneous sensors. Diagnostic bookkeeping never changes estimator inputs.
+// Save the state just before and after the GPS update. Prediction and any
+// same-time gyro/wheel updates have already happened. These are only for logging.
 struct GpsEventDiagnostics {
   State predicted_state;
   Covariance predicted_covariance;

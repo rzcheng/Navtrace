@@ -15,19 +15,20 @@ Replay::Replay(State initial_state, Covariance initial_covariance, Config config
 
 ReplayResult Replay::process(const SensorEvent& event) {
   ReplayResult result;
-  const std::size_t rank = event.measurement.index();
-  const unsigned bit = 1U << rank;
-  // Validate before prediction. Copy candidates also makes numerical failure atomic.
+  const std::size_t sensor_order = event.measurement.index();
+  const unsigned sensor_bit = 1U << sensor_order;
+  // Check the event before moving forward. Work on copies so a failed
+  // update leaves the last good state alone.
   if (event.timestamp_us < 0 || event.timestamp_us < timestamp_us_) {
     result.reason = "negative or out-of-order timestamp";
     return result;
   }
   if (has_event_ && event.timestamp_us == timestamp_us_) {
-    if ((sensors_at_timestamp_ & bit) != 0U) {
+    if ((sensors_at_timestamp_ & sensor_bit) != 0U) {
       result.reason = "duplicate sensor at timestamp";
       return result;
     }
-    if (rank < last_sensor_rank_) {
+    if (sensor_order < last_sensor_rank_) {
       result.reason = "simultaneous order must be gyro, wheel, GPS";
       return result;
     }
@@ -41,60 +42,63 @@ ReplayResult Replay::process(const SensorEvent& event) {
     result.reason = "event gap exceeds max_gap_s";
     return result;
   }
-  Ekf candidate = ekf_;
-  State dr_candidate = dr_state_;
+  Ekf next_filter = ekf_;
+  State next_dr_state = dr_state_;
   if (method_ == Method::DeadReckoning) {
     if (dt_s > 0.0) {
       const int steps = static_cast<int>(std::ceil(dt_s / ekf_.config().max_step_s));
-      for (int i = 0; i < steps; ++i) dr_candidate = propagate_mean(dr_candidate, dt_s / static_cast<double>(steps));
+      for (int step = 0; step < steps; ++step) {
+        next_dr_state = propagate_mean(next_dr_state, dt_s / static_cast<double>(steps));
+      }
     }
     if (const auto* gyro = std::get_if<GyroMeasurement>(&event.measurement)) {
-      dr_candidate(OMEGA) = gyro->yaw_rate_rad_per_s - dr_candidate(BIAS);
+      next_dr_state(OMEGA) = gyro->yaw_rate_rad_per_s - next_dr_state(BIAS);
     } else if (const auto* wheel = std::get_if<WheelSpeedMeasurement>(&event.measurement)) {
-      dr_candidate(SPEED) = wheel->speed_m_per_s;
+      next_dr_state(SPEED) = wheel->speed_m_per_s;
     }
-    if (!dr_candidate.allFinite()) {
+    if (!next_dr_state.allFinite()) {
       result.reason = "nonfinite dead-reckoning state";
       return result;
     }
     result.update.status = UpdateStatus::Accepted;
-    result.update.reason = rank == 2U ? "GPS ignored by dead reckoning" : "dead-reckoning hold updated";
+    result.update.reason = sensor_order == 2U ? "GPS ignored by dead reckoning" : "dead-reckoning hold updated";
   } else {
-    const auto predicted = candidate.predict(dt_s);
-    if (!predicted.ok) {
-      result.reason = predicted.reason;
+    const auto prediction = next_filter.predict(dt_s);
+    if (!prediction.ok) {
+      result.reason = prediction.reason;
       return result;
     }
     if (const auto* gyro = std::get_if<GyroMeasurement>(&event.measurement)) {
-      result.update = candidate.update_gyro(*gyro);
+      result.update = next_filter.update_gyro(*gyro);
     } else if (const auto* wheel = std::get_if<WheelSpeedMeasurement>(&event.measurement)) {
-      result.update = candidate.update_wheel_speed(*wheel);
+      result.update = next_filter.update_wheel_speed(*wheel);
     } else {
       result.gps.emplace();
-      result.gps->predicted_state = candidate.state();
-      result.gps->predicted_covariance = candidate.covariance();
-      result.update = candidate.update_gps(std::get<GpsMeasurement>(event.measurement));
+      result.gps->predicted_state = next_filter.state();
+      result.gps->predicted_covariance = next_filter.covariance();
+      result.update = next_filter.update_gps(std::get<GpsMeasurement>(event.measurement));
     }
     if (result.update.status == UpdateStatus::Invalid) {
       result.reason = result.update.reason;
       return result;
     }
   }
-  ekf_ = candidate;
-  dr_state_ = dr_candidate;
+  // The event is valid, so keep the new state and time.
+  ekf_ = next_filter;
+  dr_state_ = next_dr_state;
   if (!has_event_ || event.timestamp_us != timestamp_us_) sensors_at_timestamp_ = 0;
-  sensors_at_timestamp_ |= bit;
-  last_sensor_rank_ = rank;
+  sensors_at_timestamp_ |= sensor_bit;
+  last_sensor_rank_ = sensor_order;
   timestamp_us_ = event.timestamp_us;
   has_event_ = true;
-  if (rank == 2U) {
+  if (sensor_order == 2U) {
     if (method_ == Method::DeadReckoning) ++ignored_gps_;
     else if (result.update.status == UpdateStatus::Accepted) ++accepted_gps_;
     else ++rejected_gps_;
     if (result.gps) {
       auto& gps = *result.gps;
-      gps.posterior_state = candidate.state();
-      gps.posterior_covariance = candidate.covariance();
+      gps.posterior_state = next_filter.state();
+      gps.posterior_covariance = next_filter.covariance();
       if (last_available_gps_us_) gps.since_available_us = timestamp_us_ - *last_available_gps_us_;
       if (last_accepted_gps_us_) gps.since_accepted_us = timestamp_us_ - *last_accepted_gps_us_;
       if (result.update.status == UpdateStatus::Accepted) {

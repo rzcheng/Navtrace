@@ -181,3 +181,7 @@ runs also failed to settle with entirely clean GPS. The short matched-model
 sanity ensemble passed its approximate reference checks; that does not establish
 long-outage consistency. **No recovery policy was added.** Read the brief
 [failure and recovery case study](docs/failure_case_study.md) before proposing one.
+
+Historical reports retain their original commit IDs. After the commit-message
+cleanup, use the [commit map](docs/commit-history.md) to locate the same source
+snapshots in the renamed history.

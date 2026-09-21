@@ -41,7 +41,7 @@ def run_study(binary, output, protocol_path, filter_path, development_smoke=Fals
         raise ValueError("build the C++ replay executable first")
     seeds = [protocol["development_seed"]] if development_smoke else protocol["evaluation_seeds"]
     role = "development" if development_smoke else "held_out_m2"
-    # Always fresh: never replace an earlier evaluation or consume its outputs.
+    # Use a new folder so earlier results stay available.
     output.mkdir(parents=True, exist_ok=False)
     shutil.copyfile(protocol_path, output / "protocol.json")
     shutil.copyfile(filter_path, output / "filter.conf")

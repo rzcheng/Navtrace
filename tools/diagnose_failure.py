@@ -20,28 +20,38 @@ from tools.plot_consistency import plot_case
 
 
 def post_return_sensor_corrections(path, start_us=45000000):
-    """Separate propagation from each sensor correction on this fixed 100 Hz recording."""
+    """Add up each sensor's corrections after GPS returns in the 100 Hz recording."""
     with Path(path).open() as stream:
-        rows=list(csv.DictReader(stream))
-    names=['px_m','py_m','yaw_rad','speed_m_per_s','yaw_rate_rad_per_s','gyro_bias_rad_per_s']
-    totals={sensor:dict(events=0,position_correction_path_m=0.,absolute_yaw_correction_rad=0.,absolute_bias_correction_rad_per_s=0.)
-            for sensor in ['gyro','wheel','gps']}
-    for previous,current in zip(rows,rows[1:]):
-        if int(current['timestamp_us'])<start_us:
+        rows = list(csv.DictReader(stream))
+    state_columns = ['px_m', 'py_m', 'yaw_rad', 'speed_m_per_s',
+                     'yaw_rate_rad_per_s', 'gyro_bias_rad_per_s']
+    totals = {
+        sensor: dict(events=0, position_correction_path_m=0.,
+                     absolute_yaw_correction_rad=0., absolute_bias_correction_rad_per_s=0.)
+        for sensor in ['gyro', 'wheel', 'gps']
+    }
+    for previous, current in zip(rows, rows[1:]):
+        if int(current['timestamp_us']) < start_us:
             continue
-        before=np.array([float(previous[n]) for n in names]);after=np.array([float(current[n]) for n in names])
-        dt=(int(current['timestamp_us'])-int(previous['timestamp_us']))/1e6
+        before = np.array([float(previous[column]) for column in state_columns])
+        after = np.array([float(current[column]) for column in state_columns])
+        dt = (int(current['timestamp_us']) - int(previous['timestamp_us'])) / 1e6
         if not 0 <= dt <= .01000000001:
             raise ValueError('event decomposition requires original complete 100 Hz recording')
-        predicted=before.copy()
-        predicted[:2]+=dt*before[3]*np.array([np.cos(before[2]),np.sin(before[2])])
-        predicted[2]+=dt*before[4]
-        change=after-predicted;change[2]=(change[2]+np.pi)%(2*np.pi)-np.pi
-        entry=totals[current['sensor']];entry['events']+=1
-        entry['position_correction_path_m']+=float(np.linalg.norm(change[:2]))
-        entry['absolute_yaw_correction_rad']+=abs(float(change[2]))
-        entry['absolute_bias_correction_rad_per_s']+=abs(float(change[5]))
-    return [dict(sensor=s,**r) for s,r in totals.items()]
+
+        # First account for motion between samples, then measure the correction.
+        predicted = before.copy()
+        predicted[:2] += dt * before[3] * np.array([np.cos(before[2]), np.sin(before[2])])
+        predicted[2] += dt * before[4]
+        change = after - predicted
+        change[2] = (change[2] + np.pi) % (2 * np.pi) - np.pi
+
+        sensor_total = totals[current['sensor']]
+        sensor_total['events'] += 1
+        sensor_total['position_correction_path_m'] += float(np.linalg.norm(change[:2]))
+        sensor_total['absolute_yaw_correction_rad'] += abs(float(change[2]))
+        sensor_total['absolute_bias_correction_rad_per_s'] += abs(float(change[5]))
+    return [dict(sensor=sensor, **values) for sensor, values in totals.items()]
 
 
 def diagnose(binary,output,source=ROOT/'results/gps-fault-study'):

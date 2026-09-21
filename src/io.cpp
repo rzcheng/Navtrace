@@ -54,7 +54,7 @@ PriorConfig read_config(std::istream& input) {
   result.filter.max_gap_s = take("max_gap_s");
   result.filter.gps_nis_threshold = take("gps_nis_threshold");
   if (!values.empty()) throw std::invalid_argument("unknown config key: " + values.begin()->first);
-  // Constructor validates all numerical assumptions before any input event.
+  // Check the starting state and settings before reading sensor events.
   const Ekf validated(result.state, result.covariance, result.filter);
   return result;
 }
