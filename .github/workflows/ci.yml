@@ -1,4 +1,4 @@
-name: NavTrace M1
+name: NavTrace
 on: [push, pull_request]
 jobs:
   build-test-demo:
@@ -27,3 +27,5 @@ jobs:
           .venv/bin/python -m pytest -q
       - name: Headless demo smoke test
         run: .venv/bin/python tools/run_demo.py --binary build/navtrace_replay --output results/ci-smoke
+      - name: GPS fault study smoke test (development seed only)
+        run: .venv/bin/python tools/run_fault_study.py --binary build/navtrace_replay --output results/ci-fault-smoke --development-smoke

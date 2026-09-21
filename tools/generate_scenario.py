@@ -77,7 +77,7 @@ def write_csv(path, header, rows):
         writer.writerows(rows)
 
 
-def generate(output, settings):
+def generate(output, settings, *, seed_role="development"):
     validate_settings(settings)
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
@@ -117,8 +117,7 @@ def generate(output, settings):
     provenance = {"settings": settings, "truth_method": "analytical piecewise constant speed/yaw-rate arcs",
                   "segments_end_s_speed_m_per_s_yaw_rate_rad_per_s": SEGMENTS,
                   "rng": "NumPy PCG64; SeedSequence.spawn(3); gyro=0 wheel=1 GPS=2",
-                  "numpy_version": np.__version__, "seed_role": "development; no held-out claim",
-                  "reserved_next_milestone_seeds": [70001, 70002, 70003],
+                  "numpy_version": np.__version__, "seed_role": seed_role,
                   "timestamp_unit": "microseconds", "evaluation_grid": "gyro timestamps, after all simultaneous updates"}
     (output / "generator.json").write_text(json.dumps(provenance, indent=2) + "\n")
     (output / "faults.json").write_text(json.dumps({"dropout": {"start_us": start_us, "end_us_exclusive": end_us},

@@ -71,3 +71,23 @@ tested simulation experiment. Before turning it into a resume claim, establish
 personal understanding and reproducibility, then evaluate reserved seeds and
 bad-GPS scenarios with predefined metrics. This document does not assert that
 Ryan personally authored or already understands every generated component.
+
+## Review M2's experiment boundary
+
+`tools/fault_scenarios.py::apply_faults` derives each GPS variant from the
+same nominal recording. Check that wheel/gyro rows and reported GPS covariance
+remain identical. `tools/run_fault_study.py` passes only observations and
+filter configuration to C++; annotations are joined later in `gps_decisions`.
+
+Read `tools/fault_metrics.py::position_settling`. Its complete uniform grid and
+201-sample dwell prevent a brief low-error dip or missing data from being called
+two-second recovery. `gps_return` measures accepted clean GPS separately; a
+correction can be accepted while pose remains wrong. Missing recovery stays
+null, with an explicit status and follow-up horizon. `summarize` retains each
+seed and failure count rather than reporting only successful runs.
+
+The gate uses the filter's own predicted covariance, not the evaluator's fault
+labels. Large uncertainty can admit a bad fix; small uncertainty around a wrong
+pose can reject a good one. Diagnose both from residuals, NIS, pose errors, and
+the actual acceptance history before proposing recovery logic. The study keeps
+the M1 parameters unchanged so the comparison has a defined experimental basis.

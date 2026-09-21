@@ -7,9 +7,11 @@ estimator, not a safety-qualified navigation system.
 
 M0–M1 implements a six-state EKF, causal dead reckoning, optional GPS innovation
 gating, deterministic CSV replay, analytical synthetic truth, independent Python
-evaluation, plots, and focused tests. Broader bad-GPS/reacquisition experiments,
-held-out seeds, wheel slip, uncertainty calibration, benchmarking, datasets, and
-ROS integration are **not implemented**. Stop here for review.
+evaluation, plots, and focused tests. M2 adds a fixed GPS fault/return study
+with reserved seeds, paired comparisons, GPS rejection accounting, and an
+explicit position-settling criterion. Wheel slip, automatic recovery logic,
+uncertainty calibration, benchmarking, datasets, and ROS integration remain
+**not implemented**. Stop after M2 for review.
 
 ## Setup and run
 
@@ -53,8 +55,8 @@ The default development recording lasts 60 s: gyro 100 Hz, wheel 20 Hz, GPS
 5 Hz, with a constant simulated gyro bias of 0.015 rad/s. The matching dropout
 file removes GPS during `[20,40)` s from the same noise realizations. These are
 simulation choices, not claims about a real robot. No parameters were changed
-after examining the development results. Seeds 70001–70003 are reserved for
-the next milestone and have not been evaluated.
+after examining the development results. Seeds 70001–70003 were reserved from
+M1 for the predefined [M2 protocol](docs/m2_protocol.md).
 
 `scenarios/development.json` is generator-only. `scenarios/filter.conf` contains
 the engine's initial prior and process/gate configuration. The engine receives
@@ -111,3 +113,32 @@ The constant-bias, no-slip simulation is favorable to this model; one developmen
 seed does not establish general performance. See [validation](docs/validation.md)
 for full results, tests, and limitations. A macOS/Linux CI workflow is provided;
 creating it is not evidence that hosted CI ran.
+
+## GPS fault study (M2)
+
+The [frozen protocol](scenarios/gps_faults.json) prescribes nominal GPS, dropout,
+three isolated spikes, a sustained offset, and early dropout followed by offset
+GPS on return. All cases for a seed use the same noise realizations. The runner
+checks the M1 filter configuration hash, refuses existing result directories,
+and never supplies fault annotations or truth to C++.
+
+```sh
+# Validate the tooling with the already-used development seed.
+python tools/run_fault_study.py --binary build/navtrace_replay \
+  --output results/fault-development --development-smoke
+# Evaluate all three reserved seeds: 5 cases x 3 methods x 3 seeds = 45 replays.
+python tools/run_fault_study.py --binary build/navtrace_replay \
+  --output results/gps-fault-study
+```
+
+Outputs include `metrics.csv`, `summary.csv` (median/min/max across seeds),
+`paired-comparisons.csv`, and `recovery.csv`, plus all C++ outputs, annotations,
+plots, and a hashed manifest. Position settling requires error <=1 m for a
+full 2 s after clean GPS returns. Acceptance delay and settling delay are
+separate metrics. Failure to settle is saved explicitly with a null delay;
+it is never averaged away as zero. See the protocol for observation windows
+and the distinction between already within the limit and later recovery.
+
+Use new seeds for future validation once these are inspected. The three-seed
+study is evidence for these specified synthetic cases, not a general robustness
+or detection-rate claim. CI runs the development variant only.

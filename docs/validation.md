@@ -4,7 +4,8 @@ The first development demo used seed **20260921**, 60 seconds, the committed
 `scenarios/filter.conf`, and analytical straight/circular truth. Gyro bias was
 constant 0.015 rad/s; noise standard deviations were GPS 0.6 m, wheel 0.05 m/s,
 gyro 0.008 rad/s. Process/prior/gate parameters were set before the first demo
-and were not retuned from these results. Reserved seeds 70001–70003 remain unused.
+and were not retuned from these results. At the end of M1, reserved seeds
+70001–70003 had not been evaluated; the subsequent M2 protocol uses them.
 
 ## Actual results
 
