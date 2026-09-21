@@ -51,6 +51,10 @@ def test_actual_three_replay_smoke_has_paired_inputs_and_accounted_outputs(tmp_p
     runs,ensemble=run_study(binary,output,smoke=True)
     manifest=json.loads((output/'manifest.json').read_text())
     assert manifest['status']=='complete' and len(runs)==3
+    matched=next(r for r in runs if r['kind']=='matched')
+    assert matched['outage_samples']==0
+    assert matched['outage_position_rmse_m'] is None
+    assert matched['outage_end_evaluation_timestamp_us'] is None
     assert manifest['attempted_replays']==manifest['completed_replays']==3
     assert manifest['failed_replays']==manifest['not_started_replays']==0
     assert manifest['commands'][0][1]==manifest['commands'][1][1]

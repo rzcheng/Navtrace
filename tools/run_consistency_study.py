@@ -82,6 +82,12 @@ def evaluate(estimate_path, gps_path, truth_path, annotation, scenario, seed, me
     errors = np.linalg.norm(states[:, :2] - truth[:, :2], axis=1)
     interval = scenario['outage_us'] or [0, int(times[-1]) + 1]
     result = compute_metrics(times, states[:, :3], truth[:, :3], *interval)
+    if scenario['outage_us'] is None:
+        # The whole-run fallback above supports common pose metrics only.
+        # A recording without an outage has no outage-window measurements.
+        for key in list(result):
+            if key.startswith('outage_'):
+                result[key] = 0 if key == 'outage_samples' else None
     result.update(seed=seed, scenario=scenario['id'], method=method, kind=kind, status='complete',
                   max_position_error_m=float(errors.max()),
                   position_coverage_95_descriptive_time_fraction=float(np.nanmean(stats['position_covered_95'])),
