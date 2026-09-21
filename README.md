@@ -172,3 +172,12 @@ updated `requirements-lock.txt` first; SciPy is an offline analysis dependency.
 The C++ `navtrace_linearize` helper uses nominal paths only for offline analysis;
 those paths are never passed to the replay estimator. Full raw study CSVs are
 retained losslessly compressed. See [diagnostic conventions](docs/diagnostics.md).
+
+The [measured M3 report](docs/m3_results.md) records 170 replays and preserves the
+M2 failure. With early offset returns, median basic/gated RMSE was 3.097/16.921 m
+and 10/0 of ten runs met the two-second settling criterion. With later offset
+returns, the corresponding results were 2.785/0.442 m and 0/10. Three weak-motion
+runs also failed to settle with entirely clean GPS. The short matched-model
+sanity ensemble passed its approximate reference checks; that does not establish
+long-outage consistency. **No recovery policy was added.** Read the brief
+[failure and recovery case study](docs/failure_case_study.md) before proposing one.

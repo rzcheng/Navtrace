@@ -30,3 +30,9 @@ symmetry checks, CTest, pytest, and a real C++ demo. Do not weaken tolerances,
 clip eigenvalues, cherry-pick seeds, or invent improvements to pass checks.
 Keep Eigen as the numerical dependency and GoogleTest as the C++ test framework.
 Keep Python dependencies local; keep generated artifacts out of Git by default.
+
+M3 finished with a documented Path D decision; no M4 policy was implemented.
+Read docs/m3_results.md and docs/failure_case_study.md before further changes.
+Seeds 81001–81010 and 82001–82030 are consumed; never relabel them untouched.
+Preserve original frozen results and the separate absent-outage labeling correction.
+Stop for Ryan's review. The proposed next study needs fresh seeds and a new protocol.

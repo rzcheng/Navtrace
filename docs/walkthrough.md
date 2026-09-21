@@ -97,3 +97,10 @@ At 40 s a shifted fix was accepted with NIS 2.048; at 45 s a clean fix was
 rejected with NIS 169.026. Explain how S changed before proposing a fix.
 Also compare seed 70001: a large variance in one direction did not prevent
 rejection. The eigenvectors and residual direction matter, not just the diagonal.
+
+M3 adds [an event-level case study](failure_case_study.md) and [measured results](m3_results.md).
+Review `tools/consistency.py` for marginal covariance versus precision and
+`tools/observability.py` for process sensitivity versus Kalman correction.
+Diagnostics leave estimator means/covariances unchanged; no recovery mechanism
+was added. Eight runs met the two-second dwell yet later ended above 1 m, so
+acceptance, sampled settling, and durable recovery must stay separate.
