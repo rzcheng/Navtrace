@@ -1,0 +1,29 @@
+name: NavTrace M1
+on: [push, pull_request]
+jobs:
+  build-test-demo:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Local Python environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install -r requirements-lock.txt
+      - name: Build with warnings and sanitizers
+        run: |
+          .venv/bin/cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DNAVTRACE_SANITIZE=ON
+          .venv/bin/cmake --build build --parallel 2
+      - name: Tests
+        run: |
+          .venv/bin/ctest --test-dir build --output-on-failure
+          .venv/bin/python -m pytest -q
+      - name: Headless demo smoke test
+        run: .venv/bin/python tools/run_demo.py --binary build/navtrace_replay --output results/ci-smoke

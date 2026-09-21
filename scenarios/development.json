@@ -1,0 +1,13 @@
+{
+  "seed": 20260921,
+  "duration_s": 60,
+  "gyro_hz": 100,
+  "wheel_hz": 20,
+  "gps_hz": 5,
+  "gyro_noise_std_rad_per_s": 0.008,
+  "wheel_noise_std_m_per_s": 0.05,
+  "gps_noise_std_m": 0.6,
+  "true_gyro_bias_rad_per_s": 0.015,
+  "outage_start_s": 20,
+  "outage_end_s": 40
+}
