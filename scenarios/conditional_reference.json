@@ -1,0 +1,20 @@
+{
+  "protocol_id": "conditional-outage-reference-v1",
+  "baseline_commit": "0694ea9c4d7255bd5f513f14e49e6f3d7803d5b2",
+  "filter_sha256": "23b03b85379e44aac9caf702e2c873789533ce93bc2a4b2b2db874eaa41c54b4",
+  "recording_seeds": [83001, 83021],
+  "method": "gated",
+  "checkpoint_us": 1990000,
+  "report_times_us": [1990000, 5000000, 10000000, 15000000, 22000000],
+  "sample_counts": [512, 2048, 8192],
+  "reference_seeds": [91001, 91002, 91003],
+  "pilot_seed": 20260922,
+  "batches": 16,
+  "full_run_wall_budget_s": 600,
+  "memory_budget_mib": 512,
+  "stability_standard_errors": 4,
+  "precision_standard_errors": 3,
+  "mean_precision_fraction_of_ekf_std": 0.05,
+  "moment_precision_fraction": 0.10,
+  "mass_precision_absolute": 0.02
+}

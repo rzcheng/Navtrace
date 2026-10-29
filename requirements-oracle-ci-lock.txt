@@ -1,0 +1,7 @@
+# same optional backend as Stage A, for the two CI runner architectures.
+# verified against https://pypi.org/pypi/python-flint/0.9.0/json
+# linux: python_flint-0.9.0-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+# macos: python_flint-0.9.0-cp310-abi3-macosx_11_0_arm64.whl
+python-flint==0.9.0 \
+    --hash=sha256:376b88cacd30612479e839ffdba887599d3f9c8c0e214852bf80bb2b194e4d76 \
+    --hash=sha256:025fd4e77f2cbbf40f63b9cd7571aad3803deb57aecd72e7c397480fe84921a0

@@ -11,24 +11,33 @@ evaluation, plots, and focused tests. M2 adds a fixed GPS fault/return study
 with reserved seeds, paired comparisons, GPS rejection accounting, and an
 explicit position-settling criterion. Wheel slip, automatic recovery logic,
 uncertainty calibration, benchmarking, datasets, and ROS integration remain
-**not implemented**. Stop after M2 for review.
+**not implemented**. Later diagnostic studies below preserve the same estimator
+and tuning. The conditional outage reference is finished and awaiting review.
 
 ## Setup and run
 
-Requires a C++17 compiler and Python 3.11+. On this host, Python is at
-`/Users/ryancheng/.pyenv/versions/3.11.9/bin/python3.11`. From the project root:
+Requires a C++17 compiler and Python 3.11. The full Python suite also uses
+the pinned optional oracle backend on Linux x64 or macOS arm64. From the
+project root in a fresh checkout:
 
 ```sh
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-lock.txt
+python -m pip install --only-binary=:all: --require-hashes --no-deps \
+  --target .deps/oracle -r requirements-oracle-ci-lock.txt
+export PYTHONPATH="$PWD:$PWD/.deps/oracle${PYTHONPATH:+:$PYTHONPATH}"
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build --parallel 2
 ctest --test-dir build --output-on-failure
-python -m pytest -q
+python -m pytest -q -W error::RuntimeWarning
 python tools/run_demo.py --binary build/navtrace_replay --output results/my-demo
 ```
 
+The isolated backend leaves the original requirements and virtualenv unchanged.
+Other platforms need a separately verified wheel; do not skip oracle tests or
+fall back to an unpinned source build. An existing research workspace may reuse
+its verified isolated backend through `PYTHONPATH` without reinstalling it.
 For the already configured workspace, start at `source .venv/bin/activate`.
 Use a fresh output directory; the demo refuses to overwrite existing results.
 `--overwrite` explicitly replaces only a marked NavTrace results directory.
@@ -88,9 +97,6 @@ The estimator, replay, generator, and evaluator are project implementations
 created with Codex assistance. Eigen provides matrix algebra/decompositions,
 GoogleTest provides C++ tests, NumPy supplies random generation/array operations,
 and matplotlib draws the plots. No existing EKF/localization library is used.
-Ryan should review the functions and decisions in the
-[walkthrough](docs/walkthrough.md); generated code is not evidence of personal
-authorship or understanding.
 
 ## Measured development results
 
@@ -179,9 +185,83 @@ and 10/0 of ten runs met the two-second settling criterion. With later offset
 returns, the corresponding results were 2.785/0.442 m and 0/10. Three weak-motion
 runs also failed to settle with entirely clean GPS. The short matched-model
 sanity ensemble passed its approximate reference checks; that does not establish
-long-outage consistency. **No recovery policy was added.** Read the brief
-[failure and recovery case study](docs/failure_case_study.md) before proposing one.
+long-outage consistency. **No recovery policy was added.** The M3 report records
+the failure evidence and remaining limitations.
 
 Historical reports retain their original commit IDs. After the commit-message
 cleanup, use the [commit map](docs/commit-history.md) to locate the same source
 snapshots in the renamed history.
+
+## Long GPS outage follow-up
+
+The [frozen experiment](docs/long_outage_protocol.md) tests uncertainty through
+a clean 20-second GPS outage with prior, process noise and sensor noise matched
+to the filter. It compares paired nominal/dropout recordings across 30 fresh
+seeds, using the unchanged basic and gated C++ EKF. No recovery policy is added.
+
+```bash
+python tools/run_long_outage.py --binary build/navtrace_replay \
+  --output results/long-outage-development --development-smoke
+python tools/run_long_outage.py --binary build/navtrace_replay \
+  --output results/long-outage-study
+```
+
+Both commands refuse existing output folders. Outputs include `metrics.csv`,
+`summary.csv`, `ensemble.csv`, `geometry.json`, `return-events.csv`, full compressed
+C++ trajectories/GPS diagnostics, paired inputs, truth, and a hashed manifest.
+`trajectories.png`, `errors.png`, `ensemble-nees.png` and `return-geometry.png`
+show actual estimates and independent errors. Aggregate error covariance and
+mean reported covariance are geometric summaries; their agreement would not
+by itself establish calibrated conditional uncertainty.
+
+The [measured long-outage report](docs/long_outage_results.md) records 120 replays
+without numerical/output failures. Basic/gated median outage-recording RMSE was
+1.371/1.371 m, but only 26/30 gated runs met the settling criterion; three rejected
+every clean returning fix. Basic position mean NEES reached 23.176 just before
+return, versus the approximate reference [1.349,2.777]. See the actual
+[uncertainty plot](results/long-outage-study/ensemble-nees.png) and
+[error geometry](results/long-outage-study/return-geometry.png). Seeds 83001–83030
+are consumed. The estimator and tuning remain unchanged; no recovery policy
+has been added.
+
+## Conditional outage reference
+
+The [reference protocol](docs/conditional_reference_protocol.md) isolates the
+distribution after GPS loss in two consumed recordings. An independent Python
+linear-Gaussian path sampler conditions on the actual wheel/gyro observations,
+then integrates position along each sampled path. It retains the full checkpoint
+covariance and stops before GPS returns. Production C++ and tuning stay fixed.
+
+```bash
+python tools/run_conditional_reference.py --pilot --output results/reference-pilot
+python tools/run_conditional_reference.py --pilot-results results/reference-pilot \
+  --output results/reference-comparison
+```
+
+Use fresh output folders. This consumes the frozen local
+`results/long-outage-study` artifacts; `--study PATH` selects another copy.
+To reconstruct that baseline, run its documented experiment at commit `0694ea9`
+in a separate checkout, then supply its results path. Do not reset current work.
+Historical study commits such as `0694ea9` and their frozen generated inputs
+are preserved in the original local research checkout. The published
+integration starts from a reviewed source snapshot; it does not publish
+that earlier local ancestry or the ignored study artifacts. A fresh public
+clone can build and run the development tests, but cannot reproduce these
+saved studies from the checkout alone. The historical commands above require
+the preserved baseline checkout and inputs. Their hash checks remain strict.
+
+The runner verifies baseline hashes, performs a bounded pilot, and retains
+samples, distribution comparisons, convergence diagnostics and three plots.
+Monte Carlo samples for one recording are not independent navigation trials.
+
+The [measured reference report](docs/conditional_reference_results.md) records
+18 runs, 90 endpoint distributions, and all 70 predefined numerical-resolution
+checks passing. Immediately before GPS returns, the non-lockout/lockout cases
+have reference-to-EKF mean differences of 0.266/1.096 m. Reference variance along
+the EKF's narrow direction is 1.98/48.16 times the reported variance; only
+84.92%/45.85% of samples fall inside its nominal 95% position ellipse. These are
+conditional-distribution diagnostics for two consumed recordings, not empirical
+coverage or evidence of a better navigation system. The
+[position samples](results/conditional-reference-study/position-shape.png) show
+the curved distribution that a single ellipse does not fully describe.
+No production change follows automatically from this comparison.
