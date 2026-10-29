@@ -2,21 +2,40 @@ name: NavTrace
 on: [push, pull_request]
 jobs:
   build-test-demo:
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-24.04
+            architecture: x64
+          - os: macos-15
+            architecture: arm64
     runs-on: ${{ matrix.os }}
     env:
       UBSAN_OPTIONS: halt_on_error=1
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/.deps/oracle
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      VECLIB_MAXIMUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          architecture: ${{ matrix.architecture }}
       - name: Local Python environment
         run: |
           python -m venv .venv
           .venv/bin/python -m pip install -r requirements-lock.txt
+      - name: Install the pinned oracle backend
+        run: |
+          .venv/bin/python -m pip install \
+            --index-url https://pypi.org/simple \
+            --only-binary=:all: --require-hashes --no-deps \
+            --target .deps/oracle -r requirements-oracle-ci-lock.txt
       - name: Build with warnings and sanitizers
         run: |
           .venv/bin/cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DNAVTRACE_SANITIZE=ON
@@ -24,10 +43,12 @@ jobs:
       - name: Tests
         run: |
           .venv/bin/ctest --test-dir build --output-on-failure
-          .venv/bin/python -m pytest -q
+          .venv/bin/python -m pytest -q -W error::RuntimeWarning
       - name: Headless demo smoke test
         run: .venv/bin/python tools/run_demo.py --binary build/navtrace_replay --output results/ci-smoke
       - name: GPS fault study smoke test (development seed only)
         run: .venv/bin/python tools/run_fault_study.py --binary build/navtrace_replay --output results/ci-fault-smoke --development-smoke
       - name: Consistency study smoke test (development seed only)
         run: .venv/bin/python tools/run_consistency_study.py --binary build/navtrace_replay --output results/ci-consistency-smoke --smoke
+      - name: Long GPS outage smoke test (development seed only)
+        run: .venv/bin/python tools/run_long_outage.py --binary build/navtrace_replay --output results/ci-long-outage --development-smoke
