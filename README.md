@@ -120,6 +120,15 @@ seed does not establish general performance. See [validation](docs/validation.md
 for full results, tests, and limitations. A macOS/Linux CI workflow is provided;
 creating it is not evidence that hosted CI ran.
 
+CI uploads available diagnostics for seven days under the workflow run's
+**Artifacts** section. The `ci-diagnostics-<os>-<architecture>-<attempt>`
+archive contains CTest and pytest JUnit reports, the CTest log, and available
+development smoke manifests, metrics, summaries and plots. Uploads run after
+success or failure, so a failed run may contain only partial diagnostics; check
+its job status and each smoke manifest before using the results. Cancelled runs
+or failures before any reports are produced may have no archive. These small
+archives omit raw replay recordings.
+
 ## GPS fault study (M2)
 
 The [frozen protocol](scenarios/gps_faults.json) prescribes nominal GPS, dropout,
