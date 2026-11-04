@@ -42,8 +42,11 @@ jobs:
           .venv/bin/cmake --build build --parallel 2
       - name: Tests
         run: |
-          .venv/bin/ctest --test-dir build --output-on-failure
-          .venv/bin/python -m pytest -q -W error::RuntimeWarning
+          mkdir -p results/ci-tests
+          .venv/bin/ctest --test-dir build --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/results/ci-tests/ctest.xml"
+          .venv/bin/python -m pytest -q -W error::RuntimeWarning \
+            --junitxml=results/ci-tests/pytest.xml
       - name: Headless demo smoke test
         run: .venv/bin/python tools/run_demo.py --binary build/navtrace_replay --output results/ci-smoke
       - name: GPS fault study smoke test (development seed only)
@@ -52,3 +55,18 @@ jobs:
         run: .venv/bin/python tools/run_consistency_study.py --binary build/navtrace_replay --output results/ci-consistency-smoke --smoke
       - name: Long GPS outage smoke test (development seed only)
         run: .venv/bin/python tools/run_long_outage.py --binary build/navtrace_replay --output results/ci-long-outage --development-smoke
+      - name: Save test reports and development diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ci-diagnostics-${{ matrix.os }}-${{ matrix.architecture }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build/Testing/Temporary/LastTest.log
+            results/ci-tests/*.xml
+            results/ci-*/manifest.json
+            results/ci-*/metrics.csv
+            results/ci-*/metrics.json
+            results/ci-*/summary.csv
+            results/ci-*/*.png
